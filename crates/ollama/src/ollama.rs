@@ -3,7 +3,7 @@ use futures::{AsyncBufReadExt, AsyncReadExt, StreamExt, io::BufReader, stream::B
 use http_client::{AsyncBody, HttpClient, Method, Request as HttpRequest, http};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{sync::Arc, time::Duration};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 pub const OLLAMA_API_URL: &str = "http://localhost:11434";
 
@@ -212,6 +212,8 @@ pub struct ModelDetails {
 #[derive(Deserialize, Debug)]
 pub struct ModelShow {
     #[serde(default)]
+    pub model_info: HashMap<String, Value>,
+    #[serde(default)]
     pub capabilities: Vec<String>,
 }
 
@@ -223,6 +225,22 @@ impl ModelShow {
 
     pub fn supports_thinking(&self) -> bool {
         self.capabilities.iter().any(|v| v == "thinking")
+    pub fn context_length(&self) -> Option<usize> {
+        // Get the architecture
+        let arch = self
+            .model_info
+            .get("general.architecture")
+            .and_then(|v| v.as_str());
+
+        if let Some(architecture) = arch {
+            let context_key = format!("{}.context_length", architecture);
+            self.model_info
+                .get(&context_key)
+                .and_then(|v| v.as_u64())
+                .map(|v| v as usize)
+        } else {
+            Some(2048)
+        }
     }
 }
 

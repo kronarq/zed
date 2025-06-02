@@ -99,7 +99,7 @@ impl State {
                         let ollama_model = ollama::Model::new(
                             name,
                             None,
-                            None,
+                            capabilities.context_length(),
                             Some(capabilities.supports_tools()),
                             Some(capabilities.supports_thinking()),
                         );
